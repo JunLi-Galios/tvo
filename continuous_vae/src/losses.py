@@ -202,6 +202,62 @@ def get_thermo_loss_from_log_weight_log_p_log_q(log_weight, log_p, log_q, partit
     return loss
 
 
+def get_alpha_thermo_loss_from_log_weight_log_p_log_q(log_weight, log_p, log_q, partition, num_particles=1,
+                                                integration='left', alpha=0.5):
+    """Args:
+        log_weight: tensor of shape [batch_size, num_particles]
+        log_p: tensor of shape [batch_size, num_particles]
+        log_q: tensor of shape [batch_size, num_particles]
+        partition: partition of [0, 1];
+            tensor of shape [num_partitions + 1] where partition[0] is zero and
+            partition[-1] is one;
+            see https://en.wikipedia.org/wiki/Partition_of_an_interval
+        num_particles: int
+        integration: left, right or trapz
+
+    Returns:
+        loss: scalar that we call .backward() on and step the optimizer.
+        elbo: average elbo over data
+    """
+
+
+    heated_log_weight = log_weight.unsqueeze(-1) * partition
+    heated_normalized_weight = util.exponentiate_and_normalize(
+        heated_log_weight, dim=1)
+    thermo_logp = partition * log_p.unsqueeze(-1) + \
+        (1 - partition) * log_q.unsqueeze(-1)
+
+    wf = heated_normalized_weight * log_weight.unsqueeze(-1)
+    w_detached = heated_normalized_weight.detach()
+    wf_detached = wf.detach()
+    if num_particles == 1:
+        correction = 1
+    else:
+        correction = num_particles / (num_particles - 1)
+
+    cov = correction * torch.sum(
+        w_detached * (log_weight.unsqueeze(-1) - torch.sum(wf, dim=1, keepdim=True)).detach() *
+        (thermo_logp - torch.sum(thermo_logp * w_detached, dim=1, keepdim=True)),
+        dim=1)
+
+    multiplier = torch.zeros_like(partition)
+    if integration == 'trapz':
+        multiplier[0] = 0.5 * (partition[1] - partition[0])
+        multiplier[1:-1] = 0.5 * (partition[2:] - partition[0:-2])
+        multiplier[-1] = 0.5 * (partition[-1] - partition[-2])
+    elif integration == 'left':
+        multiplier[:-1] = partition[1:] - partition[:-1]
+    elif integration == 'right':
+        multiplier[1:] = partition[1:] - partition[:-1]
+
+    loss = -torch.mean(torch.sum(
+        multiplier * (cov + torch.sum(
+            w_detached * log_weight.unsqueeze(-1), dim=1)),
+        dim=1))
+
+    return loss
+
+
 def get_log_p_and_kl(generative_model, inference_network, obs, num_samples):
     """Args:
         generative_model: models.GenerativeModel object

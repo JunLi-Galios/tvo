@@ -2,6 +2,13 @@ import torch
 import numpy as np
 import random
 
+def log_alpha(u, alpha):
+    return (torch.pow(u, 1 - alpha) - 1)/(1 - alpha)
+
+def exp_alpha(u, alpha):
+    v = torch.max(1 + (1 - alpha) * u, 0)
+    return torch.pow(v, 1/(1 - alpha))
+
 class AverageMeter(object):
     """
     Computes and stores the average, var, and sample_var

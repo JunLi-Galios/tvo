@@ -76,6 +76,8 @@ def my_config():
     model_name = "{}.{}.{}.{}.{}".format(architecture, loss, num_stochastic_layers, num_deterministic_layers, S)
     if loss == 'thermo':
         model_name = "{}.{}.{}.{}".format(model_name, integration, log_beta_min, K)
+    elif loss == 'thermo_alpha':
+        model_name = "{}.{}.{}.{}.{}".format(model_name, alpha, integration, log_beta_min, K)
 
 
 def init(config, _run):
@@ -164,7 +166,7 @@ def train(args):
         epoch_train_elbo = 0
         for idx, data in enumerate(train_data_loader):
             optimizer.zero_grad()
-            loss, elbo = args.loss(generative_model, inference_network, data, args, args.valid_S)
+            loss, elbo = args.loss(generative_model, inference_network, data, args, args.valid_S)#TODO add alpha lower bound
             loss.backward()
             optimizer.step()
             epoch_train_elbo += elbo.item()

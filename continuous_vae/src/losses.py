@@ -146,6 +146,32 @@ def get_thermo_loss(generative_model, inference_network, obs, args, valid_size):
     return thermo_loss, iwae_estimate
 
 
+def get_thermo_alpha_loss(generative_model, inference_network, obs, args, valid_size):
+    """
+    Args:
+        generative_model: models.GenerativeModel object
+        inference_network: models.InferenceNetwork object
+        obs: tensor of shape [batch_size]
+        partition: partition of [0, 1];
+            tensor of shape [num_partitions + 1] where partition[0] is zero and
+            partition[-1] is one;
+            see https://en.wikipedia.org/wiki/Partition_of_an_interval
+        num_particles: int
+        integration: left, right or trapz
+
+    Returns:
+        loss: scalar that we call .backward() on and step the optimizer.
+        elbo: average elbo over data
+    """
+    log_weight, log_p, log_q = get_log_weight_log_p_log_q(
+        generative_model, inference_network, obs, num_particles=args.S, reparam=False)
+    thermo_alpha_loss = get_alpha_thermo_loss_from_log_weight_log_p_log_q(
+        args.alpha, log_weight, log_p, log_q, args.partition, num_particles=args.S, integration=args.integration)
+    iwae_estimate = get_test_log_evidence(generative_model, inference_network, obs, valid_size)
+
+    return thermo_alpha_loss, iwae_estimate
+
+
 def get_thermo_loss_from_log_weight_log_p_log_q(log_weight, log_p, log_q, partition, num_particles=1,
                                                 integration='left'):
     """Args:

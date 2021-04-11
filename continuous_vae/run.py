@@ -43,6 +43,7 @@ def my_config():
     test_K = 20
     log_beta_min   = -1.09
     partition_type = "log"
+    alpha = 0.5
 
     # Training
     seed       = 1
@@ -69,7 +70,7 @@ def my_config():
     assert integration in ['left', 'right', 'trap']
     assert model_type in ['continuous', 'discrete']
     assert optimizer in ['adam']
-    assert loss in ['reinforce', 'vae', 'iwae', 'thermo']
+    assert loss in ['reinforce', 'vae', 'iwae', 'thermo', 'thermo_alpha']
 
     # Name
     model_name = "{}.{}.{}.{}.{}".format(architecture, loss, num_stochastic_layers, num_deterministic_layers, S)
@@ -90,7 +91,8 @@ def init(config, _run):
         'vae': losses.get_vae_loss,
         'reinforce': losses.get_reinforce_loss,
         'thermo': losses.get_thermo_loss,
-        'iwae': losses.get_iwae_loss
+        'iwae': losses.get_iwae_loss,
+        'thermo_alpha': losses.get_thermo_alpha_loss
     }
 
     args.loss_name = args.loss

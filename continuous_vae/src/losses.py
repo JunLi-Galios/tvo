@@ -202,8 +202,8 @@ def get_thermo_loss_from_log_weight_log_p_log_q(log_weight, log_p, log_q, partit
     return loss
 
 
-def get_alpha_thermo_loss_from_log_weight_log_p_log_q(log_weight, log_p, log_q, partition, num_particles=1,
-                                                integration='left', alpha=0.5):
+def get_alpha_thermo_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, log_q, partition, num_particles=1,
+                                                integration='left'):
     """Args:
         log_weight: tensor of shape [batch_size, num_particles]
         log_p: tensor of shape [batch_size, num_particles]
@@ -221,7 +221,11 @@ def get_alpha_thermo_loss_from_log_weight_log_p_log_q(log_weight, log_p, log_q, 
     """
 
 
-    heated_log_weight = log_weight.unsqueeze(-1) * partition
+    log_alpha_weight = util.log_alpha(torch.exp(log_weight.unsqueeze(-1)), alpha)
+    heated_log_alpha_weight = log_alpha_weight * partition
+    heated_exp_beta_weight = util.exp_alpha(heated_log_alpha_weight, alpha)
+    heated_pow_beta_weight = torch.pow(heated_exp_beta_weight, alpha)
+    heated_expectation = heated_pow_beta_weight * log_alpha_weight
     heated_normalized_weight = util.exponentiate_and_normalize(
         heated_log_weight, dim=1)
     thermo_logp = partition * log_p.unsqueeze(-1) + \

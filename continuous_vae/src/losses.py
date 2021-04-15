@@ -257,7 +257,8 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
     
     # log(p/q)
     log_alpha_weight = util.log_alpha(torch.exp(log_weight.unsqueeze(-1)), alpha)
-    log_alpha_weight_q = log_alpha_weight * log_q
+    # log(p/q) * q
+    log_alpha_weight_q = log_alpha_weight * torch.exp(log_q)
     # beta*log(p/q)
     heated_log_alpha_weight = log_alpha_weight * partition
     # exp[beta*log(p/q)]
@@ -304,3 +305,25 @@ def get_log_p_and_kl(generative_model, inference_network, obs, num_samples):
     elbo = torch.mean(log_weight, dim=1)
     kl = log_p - elbo
     return log_p, kl
+
+
+def get_log_p_and_alpha_div(generative_model, inference_network, obs, num_samples):
+    """Args:
+        generative_model: models.GenerativeModel object
+        inference_network: models.InferenceNetwork object
+        obs: tensor of shape [batch_size]
+        num_samples: int
+    Returns:
+        log_p: tensor of shape [batch_size]
+        kl: tensor of shape [batch_size]
+    """
+
+    log_weight, log_p, log_q = get_log_weight_log_p_log_q(
+        generative_model, inference_network, obs, num_samples)
+    
+    # log(p/q)
+    log_alpha_weight = util.log_alpha(torch.exp(log_weight.unsqueeze(-1)), alpha)
+    
+    log_p = torch.logsumexp(log_weight, dim=1) - np.log(num_samples)
+    beta_0 = torch.mean(log_alpha_weight, dim=1)
+    return log_p, beta_0

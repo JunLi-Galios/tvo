@@ -174,7 +174,7 @@ def get_thermo_alpha_loss(generative_model, inference_network, obs, args, valid_
     """
     log_weight, log_p, log_q = get_log_weight_log_p_log_q(
         generative_model, inference_network, obs, num_particles=args.S, reparam=False)
-    thermo_alpha_loss = get_alpha_thermo_loss_from_log_weight_log_p_log_q(
+    thermo_alpha_loss = get_thermo_alpha_loss_from_log_weight_log_p_log_q(
         args.alpha, log_weight, log_p, log_q, args.partition, num_particles=args.S, integration=args.integration)
     iwae_estimate = get_test_log_evidence(generative_model, inference_network, obs, valid_size)
 
@@ -237,7 +237,7 @@ def get_thermo_loss_from_log_weight_log_p_log_q(log_weight, log_p, log_q, partit
     return loss
 
 
-def get_alpha_thermo_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, log_q, partition, num_particles=1,
+def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, log_q, partition, num_particles=1,
                                                 integration='left'):
     """Args:
         log_weight: tensor of shape [batch_size, num_particles]
@@ -254,30 +254,22 @@ def get_alpha_thermo_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
         loss: scalar that we call .backward() on and step the optimizer.
         elbo: average elbo over data
     """
-
-
+    
+    # log(p/q)
     log_alpha_weight = util.log_alpha(torch.exp(log_weight.unsqueeze(-1)), alpha)
+    log_alpha_weight_q = log_alpha_weight * log_q
+    # beta*log(p/q)
     heated_log_alpha_weight = log_alpha_weight * partition
+    # exp[beta*log(p/q)]
     heated_exp_beta_weight = util.exp_alpha(heated_log_alpha_weight, alpha)
+    # exp[beta*log(p/q)]^{alpha}
     heated_pow_beta_weight = torch.pow(heated_exp_beta_weight, alpha)
-    heated_expectation = heated_pow_beta_weight * log_alpha_weight
-    heated_normalized_weight = util.exponentiate_and_normalize(
-        heated_log_weight, dim=1)
-    thermo_logp = partition * log_p.unsqueeze(-1) + \
-        (1 - partition) * log_q.unsqueeze(-1)
-
-    wf = heated_normalized_weight * log_weight.unsqueeze(-1)
-    w_detached = heated_normalized_weight.detach()
-    wf_detached = wf.detach()
-    if num_particles == 1:
-        correction = 1
-    else:
-        correction = num_particles / (num_particles - 1)
-
-    cov = correction * torch.sum(
-        w_detached * (log_weight.unsqueeze(-1) - torch.sum(wf, dim=1, keepdim=True)).detach() *
-        (thermo_logp - torch.sum(thermo_logp * w_detached, dim=1, keepdim=True)),
-        dim=1)
+    
+    heated_pow_beta_weight_detach = heated_pow_beta_weight.detach()
+    loss_1 = -torch.mean(heated_pow_beta_weight_detach * log_alpha_weight * log_q.unsqueeze(-1), dim=1)
+    
+    log_alpha_weight_q_detach = log_alpha_weight_q.detach()
+    loss_2 = -torch.mean(heated_pow_beta_weight * log_alpha_weight_q, dim=1)
 
     multiplier = torch.zeros_like(partition)
     if integration == 'trapz':
@@ -289,10 +281,7 @@ def get_alpha_thermo_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
     elif integration == 'right':
         multiplier[1:] = partition[1:] - partition[:-1]
 
-    loss = -torch.mean(torch.sum(
-        multiplier * (cov + torch.sum(
-            w_detached * log_weight.unsqueeze(-1), dim=1)),
-        dim=1))
+    loss = torch.sum(loss_1, loss_2)
 
     return loss
 

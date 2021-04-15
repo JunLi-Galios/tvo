@@ -50,15 +50,6 @@ def get_test_log_evidence(generative_model, inference_network, obs, num_particle
         iwae_log_evidence = torch.mean(log_evidence)
     return iwae_log_evidence
 
-def get_test_log_alpha_evidence(generative_model, inference_network, obs, alpha, num_particles=10):
-    TODO
-    with torch.no_grad():
-        log_weight, log_q = get_log_weight_and_log_q(
-            generative_model, inference_network, obs, num_particles)
-        log_evidence = torch.logsumexp(log_weight, dim=1) - np.log(num_particles)
-        iwae_log_evidence = torch.mean(log_evidence)
-    return iwae_log_evidence
-
 
 def get_iwae_loss(generative_model, inference_network, obs, args, valid_size):
     """

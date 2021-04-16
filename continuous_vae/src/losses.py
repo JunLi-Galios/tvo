@@ -263,7 +263,7 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
     
     pi_beta_power_weight = torch.div(pi_beta_power, torch.exp(log_q.unsqueeze(-1)))
     pi_beta_power_weight_detach = pi_beta_power_weight.detach()
-    loss_1 = -torch.mean(pi_beta_power_weight_detach * log_alpha_weight_q), dim=1)
+    loss_1 = -torch.mean(pi_beta_power_weight_detach * log_alpha_weight_q, dim=1)
     
     log_alpha_weight_detach = log_alpha_weight.detach()
     loss_2 = -torch.mean(pi_beta_power * log_alpha_weight_detach, dim=1)

@@ -276,7 +276,7 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
     elif integration == 'right':
         multiplier[1:] = partition[1:] - partition[:-1]
 
-    loss = torch.sum(loss_1, loss_2)
+    loss = torch.mean(torch.sum(loss_1, loss_2))
 
     return loss
 

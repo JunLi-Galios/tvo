@@ -249,19 +249,22 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
     # log(p/q)
     log_alpha_weight = util.log_alpha(torch.exp(log_weight.unsqueeze(-1)), alpha)
     # log(p/q) * q
-    log_alpha_weight_q = log_alpha_weight * torch.exp(log_q)
+    log_alpha_weight_q = log_alpha_weight * torch.exp(log_q.unsqueeze(-1))
     # beta*log(p/q)
     heated_log_alpha_weight = log_alpha_weight * partition
     # exp[beta*log(p/q)]
     heated_exp_beta_weight = util.exp_alpha(heated_log_alpha_weight, alpha)
-    # exp[beta*log(p/q)]^{alpha}
-    heated_pow_beta_weight = torch.pow(heated_exp_beta_weight, alpha)
+    # pi_beta = exp[beta*log(p/q)] * q
+    pi_beta = heated_exp_beta_weight * torch.exp(log_q.unsqueeze(-1))
+    # pi_beta^{alpha}
+    pi_beta_power = torch.pow(pi_beta, alpha)
     
-    heated_pow_beta_weight_detach = heated_pow_beta_weight.detach()
-    loss_1 = -torch.mean(heated_pow_beta_weight_detach * log_alpha_weight * log_q.unsqueeze(-1), dim=1)
+    pi_beta_power_weight = torch.div(pi_beta_power, torch.exp(log_q.unsqueeze(-1)))
+    pi_beta_power_weight_detach = pi_beta_power_weight.detach()
+    loss_1 = -torch.mean(pi_beta_power_weight_detach * log_alpha_weight_q), dim=1)
     
-    log_alpha_weight_q_detach = log_alpha_weight_q.detach()
-    loss_2 = -torch.mean(heated_pow_beta_weight * log_alpha_weight_q, dim=1)
+    log_alpha_weight_detach = log_alpha_weight.detach()
+    loss_2 = -torch.mean(pi_beta_power * log_alpha_weight_detach, dim=1)
 
     multiplier = torch.zeros_like(partition)
     if integration == 'trapz':

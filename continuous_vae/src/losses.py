@@ -252,7 +252,7 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
     print('partition size', partition.size())
     
     
-    heated_log_pi = util.alpha_average(log_p, log_q, partition, alpha)
+    heated_log_pi = util.alpha_average(log_p.unsqueeze(-1), log_q.unsqueeze(-1), partition, alpha)
     print('heated_log_pi size', heated_log_pi.size())
     heated_log_p = partition * log_p.unsqueeze(-1)
     print('heated_log_p size', heated_log_p.size())
@@ -262,7 +262,7 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
         heated_log_pi - heated_log_q, dim=1)
     print('heated_normalized_w size', heated_normalized_w.size())
     
-    w_detached = heated_normalized_weight.detach()
+    w_detached = heated_normalized_w.detach()
     
     heated_log_L = torch.log(w_detached) + (heated_log_pi - heated_log_p) * (alpha -1)
     
@@ -278,8 +278,10 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
         
     print('multiplier', multiplier)
     
-    loss = -torch.mean(torch.logsumexp(
-        torch.log(multiplier) + heated_log_L, dim=1), dim=1)
+    loss = -torch.mean(torch.sum(torch.logsumexp(
+        torch.log(multiplier) + heated_log_L, dim=1), dim=1))
+    
+    print('loss size', loss.size())
     
 
 #     heated_log_weight = log_weight.unsqueeze(-1) * partition

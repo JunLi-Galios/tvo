@@ -258,14 +258,45 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
     print('heated_log_p size', heated_log_p.size())
     heated_log_q = partition * log_q.unsqueeze(-1)
     print('heated_log_q size', heated_log_q.size())
-    heated_normalized_w = util.exponentiate_and_normalize(
+    log_heated_normalized_w = util.lognormexp(
         heated_log_pi - heated_log_q, dim=1)
-    print('heated_normalized_w size', heated_normalized_w.size())
+    print('heated_normalized_w size', log_heated_normalized_w.size())
     
-    w_detached = heated_normalized_w.detach()
+    log_w_detached = log_heated_normalized_w.detach()
+    w_detached = torch.exp(log_w_detached)
     
-    heated_log_L = torch.log(w_detached) + (heated_log_pi - heated_log_p) * (alpha -1)
+    heated_log_f_L = (heated_log_pi - heated_log_p) * (alpha -1)
+    heated_log_f_R = (heated_log_pi - heated_log_q) * (alpha -1)
     
+    heated_f_L = torch.exp(heated_log_f_L)
+    heated_f_R = torch.exp(heated_log_f_R)
+    
+    heated_log_L = log_w_detached + heated_log_f_L
+    
+    heated_log_R = log_w_detached + heated_log_f_R
+
+    print('heated_log_L size', heated_log_L.size())
+    print('heated_log_L min={}, max={}'.format(heated_log_L.min(), heated_log_L.max()) )
+    
+    
+    log_wf_L_detached = heated_log_L.detach()
+    log_wf_R_detached = heated_log_R.detach()
+    
+    
+    if num_particles == 1:
+        correction = 1
+    else:
+        correction = num_particles / (num_particles - 1)
+        
+    cov_L = correction * torch.sum(
+        w_detached * (heated_f_L - torch.sum(heated_f_L, dim=1, keepdim=True)).detach() *
+        (heated_log_pi - torch.sum(heated_log_pi * w_detached, dim=1, keepdim=True)),
+        dim=1)
+    cov_R = correction * torch.sum(
+        w_detached * (heated_f_R - torch.sum(heated_f_R, dim=1, keepdim=True)).detach() *
+        (heated_log_pi - torch.sum(heated_log_pi * w_detached, dim=1, keepdim=True)),
+        dim=1)
+        
     multiplier = torch.zeros_like(partition)
     if integration == 'trapz':
         multiplier[0] = 0.5 * (partition[1] - partition[0])
@@ -278,9 +309,12 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
         
     print('multiplier', multiplier)
     
-    loss = -torch.mean(torch.sum(torch.logsumexp(
-        torch.log(multiplier) + heated_log_L, dim=1), dim=1))
+    L = torch.sum(multiplier * (cov_L + torch.exp(torch.logsumexp(
+        heated_log_L, dim=1))), dim=1)
+    R = torch.sum(multiplier * (cov_R + torch.exp(torch.logsumexp(
+        heated_log_R, dim=1))), dim=1)
     
+    loss = -torch.mean(L-R) / (1-alpha)
     print('loss size', loss.size())
     
 

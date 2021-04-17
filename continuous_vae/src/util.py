@@ -10,6 +10,21 @@ def exp_alpha(u, alpha):
     v[v < 0] = 0
     return torch.pow(v, 1/(1 - alpha))
 
+def alpha_average(log_p, log_q, beta, alpha):
+    assert 0 <= beta <= 1
+#     if beta == 0: return p
+#     if beta == 1: return q
+    pow1, pow2 = 1.0 - beta, beta
+    
+    if alpha == 1:
+        log_prob = pow1*log_p + pow2*log_q
+    else:
+        log_prob = (1/(1-alpha))*(torch.logaddexp(
+                np.log(pow1) + (1-alpha)* log_p,
+                np.log(pow2) + (1-alpha)* log_q))
+
+    return log_prob
+
 class AverageMeter(object):
     """
     Computes and stores the average, var, and sample_var

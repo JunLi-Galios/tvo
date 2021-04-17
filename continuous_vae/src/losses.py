@@ -246,28 +246,26 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
         elbo: average elbo over data
     """
     
-    # log(p/q)
-    log_alpha_weight = util.log_alpha(torch.exp(log_weight.unsqueeze(-1)), alpha)
-    # log(p/q) * q
-    log_alpha_weight_q = log_alpha_weight * torch.exp(log_q.unsqueeze(-1))
-    # beta*log(p/q)
-    heated_log_alpha_weight = log_alpha_weight * partition
-    # exp[beta*log(p/q)]
-    heated_exp_beta_weight = util.exp_alpha(heated_log_alpha_weight, alpha)
-    # pi_beta = exp[beta*log(p/q)] * q
-    pi_beta = heated_exp_beta_weight * torch.exp(log_q.unsqueeze(-1))
-    # pi_beta^{alpha}
-    pi_beta_power = torch.pow(pi_beta, alpha)
+    print('log_weight size', log_weight.size())
+    print('log_p size', log_p.size())
+    print('log_q size', log_q.size())
+    print('partition size', partition.size())
     
-    normalization_z = torch.mean(pi_beta_power * log_alpha_weight, dim=1).detach()
     
-    pi_beta_power_weight = torch.div(pi_beta_power, torch.exp(log_q.unsqueeze(-1)))
-    pi_beta_power_weight_detach = pi_beta_power_weight.detach()
-    loss_1 = -torch.mean(pi_beta_power_weight_detach * log_alpha_weight_q, dim=1)
+    heated_log_pi = util.alpha_average(log_p, log_q, partition, alpha)
+    print('heated_log_pi size', heated_log_pi.size())
+    heated_log_p = partition * log_p.unsqueeze(-1)
+    print('heated_log_p size', heated_log_p.size())
+    heated_log_q = partition * log_q.unsqueeze(-1)
+    print('heated_log_q size', heated_log_q.size())
+    heated_normalized_w = util.exponentiate_and_normalize(
+        heated_log_pi - heated_log_q, dim=1)
+    print('heated_normalized_w size', heated_normalized_w.size())
     
-    log_alpha_weight_detach = log_alpha_weight.detach()
-    loss_2 = -torch.mean(pi_beta_power * log_alpha_weight_detach, dim=1)
-
+    w_detached = heated_normalized_weight.detach()
+    
+    heated_log_L = torch.log(w_detached) + (heated_log_pi - heated_log_p) * (alpha -1)
+    
     multiplier = torch.zeros_like(partition)
     if integration == 'trapz':
         multiplier[0] = 0.5 * (partition[1] - partition[0])
@@ -277,13 +275,53 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
         multiplier[:-1] = partition[1:] - partition[:-1]
     elif integration == 'right':
         multiplier[1:] = partition[1:] - partition[:-1]
-
-    loss = torch.sum(multiplier * (loss_1 + loss_2))
+        
+    print('multiplier', multiplier)
     
-    normalization = torch.sum(multiplier * normalization_z)
+    loss = -torch.mean(torch.logsumexp(
+        torch.log(multiplier) + heated_log_L, dim=1)), dim=1)
     
 
-    return loss / normalization
+#     heated_log_weight = log_weight.unsqueeze(-1) * partition
+    
+#     # log(p/q)
+#     log_alpha_weight = util.log_alpha(torch.exp(log_weight.unsqueeze(-1)), alpha)
+#     # log(p/q) * q
+#     log_alpha_weight_q = log_alpha_weight * torch.exp(log_q.unsqueeze(-1))
+#     # beta*log(p/q)
+#     heated_log_alpha_weight = log_alpha_weight * partition
+#     # exp[beta*log(p/q)]
+#     heated_exp_beta_weight = util.exp_alpha(heated_log_alpha_weight, alpha)
+#     # pi_beta = exp[beta*log(p/q)] * q
+#     pi_beta = heated_exp_beta_weight * torch.exp(log_q.unsqueeze(-1))
+#     # pi_beta^{alpha}
+#     pi_beta_power = torch.pow(pi_beta, alpha)
+    
+#     normalization_z = torch.mean(pi_beta_power * log_alpha_weight, dim=1).detach()
+    
+#     pi_beta_power_weight = torch.div(pi_beta_power, torch.exp(log_q.unsqueeze(-1)))
+#     pi_beta_power_weight_detach = pi_beta_power_weight.detach()
+#     loss_1 = -torch.mean(pi_beta_power_weight_detach * log_alpha_weight_q, dim=1)
+    
+#     log_alpha_weight_detach = log_alpha_weight.detach()
+#     loss_2 = -torch.mean(pi_beta_power * log_alpha_weight_detach, dim=1)
+
+#     multiplier = torch.zeros_like(partition)
+#     if integration == 'trapz':
+#         multiplier[0] = 0.5 * (partition[1] - partition[0])
+#         multiplier[1:-1] = 0.5 * (partition[2:] - partition[0:-2])
+#         multiplier[-1] = 0.5 * (partition[-1] - partition[-2])
+#     elif integration == 'left':
+#         multiplier[:-1] = partition[1:] - partition[:-1]
+#     elif integration == 'right':
+#         multiplier[1:] = partition[1:] - partition[:-1]
+
+#     loss = torch.sum(multiplier * (loss_1 + loss_2))
+    
+#     normalization = torch.sum(multiplier * normalization_z)
+    
+
+    return loss
 
 
 def get_log_p_and_kl(generative_model, inference_network, obs, num_samples):

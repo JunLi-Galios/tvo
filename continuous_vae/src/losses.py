@@ -279,7 +279,7 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
     print('multiplier', multiplier)
     
     loss = -torch.mean(torch.logsumexp(
-        torch.log(multiplier) + heated_log_L, dim=1)), dim=1)
+        torch.log(multiplier) + heated_log_L, dim=1), dim=1)
     
 
 #     heated_log_weight = log_weight.unsqueeze(-1) * partition

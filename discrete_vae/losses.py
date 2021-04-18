@@ -267,6 +267,108 @@ def get_thermo_loss_from_log_weight_log_p_log_q(
 
     return loss, elbo
 
+def get_thermo_alpha_loss(generative_model, inference_network, obs,
+                    partition=None, num_particles=1, alpha=0.99, integration='left'):
+    """
+    Args:
+        generative_model: models.GenerativeModel object
+        inference_network: models.InferenceNetwork object
+        obs: tensor of shape [batch_size]
+        partition: partition of [0, 1];
+            tensor of shape [num_partitions + 1] where partition[0] is zero and
+            partition[-1] is one;
+            see https://en.wikipedia.org/wiki/Partition_of_an_interval
+        num_particles: int
+        integration: left, right or trapz
+
+    Returns:
+        loss: scalar that we call .backward() on and step the optimizer.
+        elbo: average elbo over data
+    """
+
+    log_weight, log_p, log_q = get_log_weight_log_p_log_q(
+        generative_model, inference_network, obs, num_particles=num_particles)
+
+    return get_thermo_alpha_loss_from_log_weight_log_p_log_q(
+        log_weight, log_p, log_q, partition, num_particles=num_particles,
+        alpha=alpha, integration=integration)
+
+def get_thermo_alpha_loss_from_log_weight_log_p_log_q(log_weight, log_p, log_q, partition, num_particles=1, alpha=0.99
+                                                integration='left'):
+    """Args:
+        log_weight: tensor of shape [batch_size, num_particles]
+        log_p: tensor of shape [batch_size, num_particles]
+        log_q: tensor of shape [batch_size, num_particles]
+        partition: partition of [0, 1];
+            tensor of shape [num_partitions + 1] where partition[0] is zero and
+            partition[-1] is one;
+            see https://en.wikipedia.org/wiki/Partition_of_an_interval
+        num_particles: int
+        integration: left, right or trapz
+    Returns:
+        loss: scalar that we call .backward() on and step the optimizer.
+        elbo: average elbo over data
+    """
+
+    multiplier = torch.zeros_like(partition)
+    if integration == 'trapz':
+        multiplier[0] = 0.5 * (partition[1] - partition[0])
+        multiplier[1:-1] = 0.5 * (partition[2:] - partition[0:-2])
+        multiplier[-1] = 0.5 * (partition[-1] - partition[-2])
+    elif integration == 'left':
+        multiplier[:-1] = partition[1:] - partition[:-1]
+    elif integration == 'right':
+        multiplier[1:] = partition[1:] - partition[:-1]
+        
+    if alpha > 0:
+        sign1 = 1
+    else:
+        sign1 = -1
+    if alpha < 1:
+        sign2 = 1
+    else:
+        sign2 = -1
+    
+    heated_log_pi = util.alpha_average(log_p.unsqueeze(-1), log_q.unsqueeze(-1), partition, alpha)
+    heated_log_p = partition * log_p.unsqueeze(-1)
+    heated_log_q = partition * log_q.unsqueeze(-1)
+    
+    heated_log_w1_L = alpha * heated_log_pi - heated_log_q
+    heated_log_w2_L = (1 - alpha) * heated_log_p - heated_log_q
+    heated_log_w1_R = alpha * heated_log_pi - heated_log_q
+    heated_log_w2_R = (1 - alpha) * heated_log_q - heated_log_q
+    
+    heated_log_w1_L_detach = heated_log_w1_L.detach()
+    heated_log_w1_R_detach = heated_log_w1_R.detach()
+    heated_log_w2_L_detach = heated_log_w2_L.detach()
+    heated_log_w2_R_detach = heated_log_w2_R.detach()
+    
+    heated_log_L1 = heated_log_w1_L_detach + (1 - alpha) * heated_log_p
+    heated_log_L2 = heated_log_w2_L_detach + alpha * heated_log_pi 
+    heated_log_R1 = heated_log_w1_R_detach + (1 - alpha) * heated_log_q
+    heated_log_R2 = heated_log_w2_R_detach + alpha * heated_log_pi 
+    
+    thermo_log_L1 = torch.logsumexp(torch.log(multiplier) + torch.logsumexp(heated_log_L1, dim=1),dim=1)
+    thermo_log_L2 = torch.logsumexp(torch.log(multiplier) + torch.logsumexp(heated_log_L2, dim=1),dim=1)
+    thermo_log_R1 = torch.logsumexp(torch.log(multiplier) + torch.logsumexp(heated_log_R1, dim=1),dim=1)
+    thermo_log_R2 = torch.logsumexp(torch.log(multiplier) + torch.logsumexp(heated_log_R2, dim=1),dim=1)
+    
+    thermo_log_L1_detach = thermo_log_L1.detach()
+    
+    diff1 = thermo_log_L1 - thermo_log_L1_detach
+    diff2 = thermo_log_L2 - thermo_log_L1_detach
+    diff3 = thermo_log_R1 - thermo_log_L1_detach
+    diff4 = thermo_log_R2 - thermo_log_L1_detach
+    
+    denominator = torch.exp(diff1) + torch.exp(diff2) - torch.exp(diff3) - torch.exp(diff4)
+    denominator_detach = denominator.detach()
+        
+    loss = -torch.div(denominator, denominator_detach + 1e-10)
+        
+    loss = torch.mean(loss) / (1-alpha)
+    
+    return loss
+
 
 def get_thermo_loss_different_samples(
     generative_model, inference_network, obs, partition=None,

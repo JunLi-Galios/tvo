@@ -13,7 +13,7 @@ def run(args):
     else:
         device = torch.device('cpu')
         args.cuda = False
-    if args.train_mode == 'thermo' or args.train_mode == 'thermo_wake':
+    if args.train_mode == 'thermo' or args.train_mode == 'thermo_wake' or args.train_mode == 'thermo_alpha' or args.train_mode == 'thermo_wake_alpha':
         partition = util.get_partition(
             args.num_partitions, args.partition_type, args.log_beta_min,
             device)

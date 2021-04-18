@@ -79,12 +79,29 @@ def run(args):
         train.train_thermo(generative_model, inference_network, data_loader,
                            args.num_iterations, args.num_particles, partition,
                            optim_kwargs, train_callback)
+    elif args.train_mode == 'thermo_alpha':
+        train_callback = train.TrainThermoAlphaCallback(
+            save_dir, args.num_particles, partition, test_data_loader,
+            args.eval_num_particles, args.logging_interval,
+            args.checkpoint_interval, args.eval_interval)
+        train.train_thermo_alpha(generative_model, inference_network, data_loader,
+                           args.num_iterations, args.num_particles, partition,
+                           optim_kwargs, train_callback)
     elif args.train_mode == 'thermo_wake':
         train_callback = train.TrainThermoWakeCallback(
             save_dir, args.num_particles, test_data_loader,
             args.eval_num_particles, args.logging_interval,
             args.checkpoint_interval, args.eval_interval)
         train.train_thermo_wake(generative_model, inference_network,
+                                data_loader, args.num_iterations,
+                                args.num_particles, partition, optim_kwargs,
+                                train_callback)
+    elif args.train_mode == 'thermo_wake_alpha':
+        train_callback = train.TrainThermoAlphaWakeCallback(
+            save_dir, args.num_particles, test_data_loader,
+            args.eval_num_particles, args.logging_interval,
+            args.checkpoint_interval, args.eval_interval)
+        train.train_thermo_wake_alpha(generative_model, inference_network,
                                 data_loader, args.num_iterations,
                                 args.num_particles, partition, optim_kwargs,
                                 train_callback)
@@ -107,7 +124,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--train-mode', default='ww',
-                        help='ww, ws, reinforce, vimco, thermo, thermo_wake')
+                        help='ww, ws, reinforce, vimco, thermo, thermo_wake, thermo_alpha, thermo_wake_alpha')
     parser.add_argument('--architecture', default='linear_1',
                         help='linear_1, linear_2, linear_3 or non_linear')
     parser.add_argument('--batch-size', type=int, default=24,

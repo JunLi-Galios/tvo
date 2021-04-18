@@ -397,15 +397,24 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
         multiplier[:-1] = partition[1:] - partition[:-1]
     elif integration == 'right':
         multiplier[1:] = partition[1:] - partition[:-1]
+        
+    if alpha > 0:
+        sign1 = 1
+    else:
+        sign1 = -1
+    if alpha < 1:
+        sign2 = 1
+    else:
+        sign2 = -1
     
     heated_log_pi = util.alpha_average(log_p.unsqueeze(-1), log_q.unsqueeze(-1), partition, alpha)
     heated_log_p = partition * log_p.unsqueeze(-1)
     heated_log_q = partition * log_q.unsqueeze(-1)
     
-    heated_log_w1_L = np.log(alpha) + (alpha - 1) * (heated_log_pi - heated_log_p) - heated_log_q
-    heated_log_w1_R = np.log(alpha) + (alpha - 1) * (heated_log_pi - heated_log_q) - heated_log_q
-    heated_log_w2_L = np.log(1 - alpha) + (alpha) * (heated_log_pi - heated_log_p) - heated_log_q
-    heated_log_w2_R = np.log(1 - alpha) + (alpha) * (heated_log_pi - heated_log_q) - heated_log_q
+    heated_log_w1_L = np.log(sign1 * alpha) + (alpha - 1) * (heated_log_pi - heated_log_p) - heated_log_q
+    heated_log_w1_R = np.log(sign1 * alpha) + (alpha - 1) * (heated_log_pi - heated_log_q) - heated_log_q
+    heated_log_w2_L = np.log(sign2 * (1 - alpha)) + (alpha) * (heated_log_pi - heated_log_p) - heated_log_q
+    heated_log_w2_R = np.log(sign2 * (1 - alpha)) + (alpha) * (heated_log_pi - heated_log_q) - heated_log_q
     
     heated_log_w1_L_detach = heated_log_w1_L.detach()
     heated_log_w1_R_detach = heated_log_w1_R.detach()
@@ -433,7 +442,7 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
 #     print('thermo_log_R1', thermo_log_R1.size(), thermo_log_R1.min(), thermo_log_R1.max())
 #     print('thermo_log_R2', thermo_log_R2.size(), thermo_log_R2.min(), thermo_log_R2.max())
     
-    denominator = torch.exp(diff1) + torch.exp(diff2) - torch.exp(diff3) - torch.exp(diff4)
+    denominator = sign1 * torch.exp(diff1) + sign2 * torch.exp(diff2) - sign1 * torch.exp(diff3) - sign2 * torch.exp(diff4)
     denominator_detach = denominator.detach()
     
 #     print('denominator', denominator.size(), denominator.min(), denominator.max())

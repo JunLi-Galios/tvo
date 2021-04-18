@@ -8,6 +8,21 @@ import models
 import data
 
 
+def alpha_average(log_p, log_q, beta, alpha):
+#     if beta == 0: return p
+#     if beta == 1: return q
+    pow1, pow2 = 1.0 - beta, beta
+    
+    if alpha == 1:
+        log_prob = pow1*log_p + pow2*log_q
+    else:
+        log_prob = (1/(1-alpha))*(torch.logaddexp(
+                torch.log(pow1) + (1-alpha)* log_p,
+                torch.log(pow2) + (1-alpha)* log_q))
+
+    return log_prob
+
+
 def lognormexp(values, dim=0):
     """Exponentiates, normalizes and takes log of a tensor.
 

@@ -293,7 +293,7 @@ def get_thermo_alpha_loss(generative_model, inference_network, obs,
         log_weight, log_p, log_q, partition, num_particles=num_particles,
         alpha=alpha, integration=integration)
 
-def get_thermo_alpha_loss_from_log_weight_log_p_log_q(log_weight, log_p, log_q, partition, num_particles=1, alpha=0.99
+def get_thermo_alpha_loss_from_log_weight_log_p_log_q(log_weight, log_p, log_q, partition, num_particles=1, alpha=0.99,
                                                 integration='left'):
     """Args:
         log_weight: tensor of shape [batch_size, num_particles]

@@ -81,11 +81,11 @@ def run(args):
                            optim_kwargs, train_callback)
     elif args.train_mode == 'thermo_alpha':
         train_callback = train.TrainThermoAlphaCallback(
-            save_dir, args.num_particles, partition, test_data_loader,
+            save_dir, args.num_particles, partition, alpha, test_data_loader,
             args.eval_num_particles, args.logging_interval,
             args.checkpoint_interval, args.eval_interval)
         train.train_thermo_alpha(generative_model, inference_network, data_loader,
-                           args.num_iterations, args.num_particles, partition,
+                           args.num_iterations, args.num_particles, partition, alpha
                            optim_kwargs, train_callback)
     elif args.train_mode == 'thermo_wake':
         train_callback = train.TrainThermoWakeCallback(
@@ -98,12 +98,12 @@ def run(args):
                                 train_callback)
     elif args.train_mode == 'thermo_wake_alpha':
         train_callback = train.TrainThermoAlphaWakeCallback(
-            save_dir, args.num_particles, test_data_loader,
+            save_dir, args.num_particles, alpha, test_data_loader,
             args.eval_num_particles, args.logging_interval,
             args.checkpoint_interval, args.eval_interval)
         train.train_thermo_wake_alpha(generative_model, inference_network,
                                 data_loader, args.num_iterations,
-                                args.num_particles, partition, optim_kwargs,
+                                args.num_particles, partition, alpha, optim_kwargs,
                                 train_callback)
 
     # eval validation
@@ -150,6 +150,8 @@ if __name__ == '__main__':
     parser.add_argument('--num-partitions', type=int, default=10,
                         help='only used in training with thermo objective; '
                              'corresponds to number of betas')
+    parser.add_argument('--alpha', type=float, default=0.99,
+                        help='alpha-divergence')
     parser.add_argument('--log-beta-min', type=float, default=-10,
                         help='log base ten of beta_min')
     parser.add_argument('--partition-type', default='log',

@@ -81,11 +81,11 @@ def run(args):
                            optim_kwargs, train_callback)
     elif args.train_mode == 'thermo_alpha':
         train_callback = train.TrainThermoAlphaCallback(
-            save_dir, args.num_particles, partition, alpha, test_data_loader,
+            save_dir, args.num_particles, partition, args.alpha, test_data_loader,
             args.eval_num_particles, args.logging_interval,
             args.checkpoint_interval, args.eval_interval)
         train.train_thermo_alpha(generative_model, inference_network, data_loader,
-                           args.num_iterations, args.num_particles, partition, alpha,
+                           args.num_iterations, args.num_particles, partition, args.alpha,
                            optim_kwargs, train_callback)
     elif args.train_mode == 'thermo_wake':
         train_callback = train.TrainThermoWakeCallback(
@@ -98,12 +98,12 @@ def run(args):
                                 train_callback)
     elif args.train_mode == 'thermo_wake_alpha':
         train_callback = train.TrainThermoAlphaWakeCallback(
-            save_dir, args.num_particles, alpha, test_data_loader,
+            save_dir, args.num_particles, args.alpha, test_data_loader,
             args.eval_num_particles, args.logging_interval,
             args.checkpoint_interval, args.eval_interval)
         train.train_thermo_wake_alpha(generative_model, inference_network,
                                 data_loader, args.num_iterations,
-                                args.num_particles, partition, alpha, optim_kwargs,
+                                args.num_particles, partition, args.alpha, optim_kwargs,
                                 train_callback)
 
     # eval validation

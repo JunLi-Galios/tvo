@@ -35,7 +35,7 @@ for S in 5 10 50; do
           # lower lr for reinforce for stability
           # python run.py with loss=reinforce S=$S lr=0.00001 epochs=$EPOCHS --name cov_est_var -p -F ./runs
           # Set K = 1 for thermo to make equivalent to elbo
-          python run.py --train-mode thermo_alpha --architecture non_linear --cuda True --learning-rate $LR --num-particles $S --num-partitions $K --alpha=$ALPHA 
+          python run.py --train-mode thermo_alpha --architecture non_linear --cuda --learning-rate $LR --num-particles $S --num-partitions $K --alpha=$ALPHA 
           # Run vae as is
           # python run.py with loss=vae S=$S epochs=$EPOCHS --name cov_est_var -p -F ./runs
         done;

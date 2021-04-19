@@ -18,6 +18,19 @@ def eval_gen_inf(generative_model, inference_network, data_loader,
         num_data += obs.shape[0]
     return log_p_total / num_data, kl_total / num_data
 
+def eval_gen_inf_alpha(generative_model, inference_network, data_loader,
+                 num_particles, alpha):
+    log_p_total = 0
+    renyi_total = 0
+    num_data = 0
+    for obs in iter(data_loader):
+        log_p, renyi = losses.get_log_p_and_renyi(
+            generative_model, inference_network, obs,
+            num_particles, alpha)
+        log_p_total += torch.sum(log_p).item()
+        renyi_total += torch.sum(renyi).item()
+        num_data += obs.shape[0]
+    return log_p_total / num_data, renyi_total / num_data
 
 def train_wake_sleep(generative_model, inference_network, data_loader,
                      num_iterations, num_particles, optim_kwargs,

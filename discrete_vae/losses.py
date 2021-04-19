@@ -368,7 +368,10 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(log_weight, log_p, log_q, 
     
     loss = torch.mean(loss)
     
-    return loss
+    log_evidence = torch.logsumexp(log_weight, dim=1) - np.log(num_particles)
+    elbo = torch.mean(log_evidence)
+    
+    return loss, elbo
 
 
 def get_thermo_loss_different_samples(

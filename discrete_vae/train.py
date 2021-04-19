@@ -507,7 +507,7 @@ class TrainThermoAlphaCallback(DontPickleCuda):
                 self.eval_num_particles)
             _, renyi = eval_gen_inf_alpha(
                 generative_model, inference_network, self.test_data_loader,
-                self.eval_num_particles, self.alpha, self.integration)
+                self.eval_num_particles, self.alpha)
             self.log_p_history.append(log_p)
             self.kl_history.append(kl)
             self.renyi_history.append(renyi)

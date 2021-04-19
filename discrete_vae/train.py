@@ -463,7 +463,7 @@ def train_thermo_alpha(generative_model, inference_network, data_loader,
                 
                 
 class TrainThermoAlphaCallback(DontPickleCuda):
-    def __init__(self, save_dir, num_particles, partition, alpha, test_data_loader,
+    def __init__(self, save_dir, num_particles, partition, alpha, integration, test_data_loader,
                  eval_num_particles=5000, logging_interval=10,
                  checkpoint_interval=100, eval_interval=10):
         self.save_dir = save_dir
@@ -482,6 +482,7 @@ class TrainThermoAlphaCallback(DontPickleCuda):
         self.partition = partition
         self.alpha = alpha
         self.renyi_history = []
+        self.integration = integration
 
     def __call__(self, iteration, loss, elbo, generative_model,
                  inference_network, optimizer):
@@ -506,7 +507,7 @@ class TrainThermoAlphaCallback(DontPickleCuda):
                 self.eval_num_particles)
             _, renyi = eval_gen_inf_alpha(
                 generative_model, inference_network, self.test_data_loader,
-                self.eval_num_particles, self.alpha)
+                self.eval_num_particles, self.alpha, self.integration)
             self.log_p_history.append(log_p)
             self.kl_history.append(kl)
             self.renyi_history.append(renyi)
@@ -517,7 +518,7 @@ class TrainThermoAlphaCallback(DontPickleCuda):
                 inference_network.zero_grad()
                 loss, elbo = losses.get_thermo_alpha_loss(
                     generative_model, inference_network, self.test_obs,
-                    self.partition, self.num_particles, self.alpha)
+                    self.partition, self.num_particles, self.alpha, self.integration)
                 loss.backward()
                 stats.update([p.grad for p in generative_model.parameters()] +
                              [p.grad for p in inference_network.parameters()])

@@ -127,6 +127,8 @@ if __name__ == '__main__':
                         help='ww, ws, reinforce, vimco, thermo, thermo_wake, thermo_alpha, thermo_wake_alpha')
     parser.add_argument('--architecture', default='linear_1',
                         help='linear_1, linear_2, linear_3 or non_linear')
+    parser.add_argument('--integration', default='left',
+                        help='left, right, trapz')
     parser.add_argument('--batch-size', type=int, default=24,
                         help=' ')
     parser.add_argument('--eval-num-particles', type=int, default=5,

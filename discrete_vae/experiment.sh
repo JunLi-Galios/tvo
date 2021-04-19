@@ -6,7 +6,6 @@
 # The -F ./runs flag uses Sacred's FileStorageObserver, described here
 # https://sacred.readthedocs.io/en/stable/observers.html#file-storage-observer
 
-ALPHA=0.99
 
 # ======================
 #  Figure 6
@@ -31,13 +30,17 @@ ALPHA=0.99
 
 for S in 5 10 50; do
     for K in 1 2 5 10; do
-        for LR in 1e-3 1e-4 1e-5; do
-          # lower lr for reinforce for stability
-          # python run.py with loss=reinforce S=$S lr=0.00001 epochs=$EPOCHS --name cov_est_var -p -F ./runs
-          # Set K = 1 for thermo to make equivalent to elbo
-          python run.py --train-mode thermo_alpha --architecture non_linear --cuda --learning-rate $LR --num-particles $S --num-partitions $K --alpha=$ALPHA 
-          # Run vae as is
-          # python run.py with loss=vae S=$S epochs=$EPOCHS --name cov_est_var -p -F ./runs
+        for LR in 1e-2 1e-3 1e-4 1e-5 1e-6; do
+            for ALPHA in 0.99 0.9 0.5 0.1 1.01 1.1 2; do
+                for INTEGRATION in left right trapz; do
+                    # lower lr for reinforce for stability
+                    # python run.py with loss=reinforce S=$S lr=0.00001 epochs=$EPOCHS --name cov_est_var -p -F ./runs
+                    # Set K = 1 for thermo to make equivalent to elbo
+                    python run.py --train-mode thermo_alpha --architecture non_linear --cuda --integration $INTEGRATION --learning-rate $LR --num-particles $S --num-partitions $K --alpha=$ALPHA 
+                    # Run vae as is
+                    # python run.py with loss=vae S=$S epochs=$EPOCHS --name cov_est_var -p -F ./runs
+                done;
+            done;
         done;
     done;
 done

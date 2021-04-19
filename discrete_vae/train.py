@@ -423,7 +423,7 @@ class TrainThermoCallback(DontPickleCuda):
                     iteration, self.log_p_history[-1], self.kl_history[-1]))
             
 def train_thermo_alpha(generative_model, inference_network, data_loader,
-                 num_iterations, num_particles, partition, alpha, optim_kwargs,
+                 num_iterations, num_particles, partition, alpha, integration, optim_kwargs,
                  callback=None):
     parameters = itertools.chain.from_iterable(
         [x.parameters() for x in [generative_model, inference_network]])
@@ -435,7 +435,7 @@ def train_thermo_alpha(generative_model, inference_network, data_loader,
             optimizer.zero_grad()
             loss, elbo = losses.get_thermo_alpha_loss(
                 generative_model, inference_network, obs, partition,
-                num_particles, alpha)
+                num_particles, alpha, integration)
             loss.backward()
             optimizer.step()
 
@@ -450,7 +450,7 @@ def train_thermo_alpha(generative_model, inference_network, data_loader,
                 
                 
 class TrainThermoAlphaCallback(DontPickleCuda):
-    def __init__(self, save_dir, num_particles, partition, alpha, test_data_loader,
+    def __init__(self, save_dir, num_particles, partition, alpha, integration, test_data_loader,
                  eval_num_particles=5000, logging_interval=10,
                  checkpoint_interval=100, eval_interval=10):
         self.save_dir = save_dir
@@ -468,6 +468,7 @@ class TrainThermoAlphaCallback(DontPickleCuda):
         self.test_obs = next(iter(test_data_loader))
         self.partition = partition
         self.alpha = alpha
+        self.integration = integration
 
     def __call__(self, iteration, loss, elbo, generative_model,
                  inference_network, optimizer):
@@ -499,7 +500,7 @@ class TrainThermoAlphaCallback(DontPickleCuda):
                 inference_network.zero_grad()
                 loss, elbo = losses.get_thermo_alpha_loss(
                     generative_model, inference_network, self.test_obs,
-                    self.partition, self.num_particles, self.alpha)
+                    self.partition, self.num_particles, self.alpha, self.integration)
                 loss.backward()
                 stats.update([p.grad for p in generative_model.parameters()] +
                              [p.grad for p in inference_network.parameters()])

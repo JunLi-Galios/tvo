@@ -319,15 +319,6 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(log_weight, log_p, log_q, 
         multiplier[:-1] = partition[1:] - partition[:-1]
     elif integration == 'right':
         multiplier[1:] = partition[1:] - partition[:-1]
-        
-    if alpha > 0:
-        sign1 = 1
-    else:
-        sign1 = -1
-    if alpha < 1:
-        sign2 = 1
-    else:
-        sign2 = -1
     
     heated_log_pi = util.alpha_average(log_p.unsqueeze(-1), log_q.unsqueeze(-1), partition, alpha)
     heated_log_p = partition * log_p.unsqueeze(-1)
@@ -365,7 +356,7 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(log_weight, log_p, log_q, 
         
     loss = -torch.div(denominator, denominator_detach + 1e-10)
         
-    loss = torch.mean(loss) / (1-alpha)
+    loss = torch.mean(loss)
     
     log_evidence = torch.logsumexp(log_weight, dim=1) - np.log(num_particles)
     elbo = torch.mean(log_evidence)

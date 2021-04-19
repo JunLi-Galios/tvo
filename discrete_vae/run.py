@@ -81,12 +81,12 @@ def run(args):
                            optim_kwargs, train_callback)
     elif args.train_mode == 'thermo_alpha':
         train_callback = train.TrainThermoAlphaCallback(
-            save_dir, args.num_particles, partition, args.alpha, test_data_loader,
+            save_dir, args.num_particles, partition, args.alpha, args.integration, test_data_loader,
             args.eval_num_particles, args.logging_interval,
             args.checkpoint_interval, args.eval_interval)
         train.train_thermo_alpha(generative_model, inference_network, data_loader,
                            args.num_iterations, args.num_particles, partition, args.alpha,
-                           optim_kwargs, train_callback)
+                           args.integration, optim_kwargs, train_callback)
     elif args.train_mode == 'thermo_wake':
         train_callback = train.TrainThermoWakeCallback(
             save_dir, args.num_particles, test_data_loader,

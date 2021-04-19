@@ -463,7 +463,7 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
     
 #     print('loss', loss.size(), loss.min(), loss.max())
     
-    loss = torch.mean(loss) / (1-alpha)
+    loss = torch.mean(loss)
     
     return loss
 

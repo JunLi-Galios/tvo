@@ -357,7 +357,7 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(log_weight, log_p, log_q, 
 #     print('diff3', diff3.size(), diff3.min(), diff3.max())
 #     print('diff4', diff4.size(), diff4.min(), diff4.max())
     
-    denominator = torch.exp(diffL) - torch.exp(diffR)
+    denominator = torch.exp(diffL) - torch.exp(diffR) + 1
     denominator_detach = denominator.detach()
     
 #     print('denominator', denominator.size(), denominator.min(), denominator.max())

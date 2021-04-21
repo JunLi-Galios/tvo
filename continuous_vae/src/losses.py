@@ -495,7 +495,7 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
 #     print('multiplier', multiplier)
     
     
-    heated_log_pi = util.alpha_average(log_p.unsqueeze(-1), log_q.unsqueeze(-1), partition, alpha)
+    heated_log_pi = util.alpha_average(log_q.unsqueeze(-1), log_p.unsqueeze(-1), partition, alpha)
     heated_log_p = partition * log_p.unsqueeze(-1)
     heated_log_q = partition * log_q.unsqueeze(-1)
     
@@ -531,7 +531,7 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
     
 #     print('denominator', denominator.size(), denominator.min(), denominator.max())
     
-    loss = torch.div(denominator, denominator_detach + 1e-10)
+    loss = -torch.div(denominator, denominator_detach + 1e-10)
     
 #     print('loss', loss.size(), loss.min(), loss.max())
     

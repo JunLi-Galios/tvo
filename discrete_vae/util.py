@@ -8,20 +8,17 @@ import models
 import data
 
 
-def alpha_average(log_p, log_q, beta, alpha):
-#     if beta == 0: return p
-#     if beta == 1: return q
-#     print('beta', beta)
+def alpha_average(log_p0, log_p1, beta, alpha):
     pow1, pow2 = 1.0 - beta, beta
     pow1[-1] = 1e-10
     pow2[0] = 1e-10
 
     if alpha == 1:
-        log_prob = pow1*log_p + pow2*log_q
+        log_prob = pow1*log_p0 + pow2*log_p1
     else:
         log_prob = (1/(1-alpha))*(torch.logaddexp(
-                torch.log(pow1) + (1-alpha)* log_p,
-                torch.log(pow2) + (1-alpha)* log_q))
+                torch.log(pow1) + (1-alpha)* log_p0,
+                torch.log(pow2) + (1-alpha)* log_p1))
 
     return log_prob
 

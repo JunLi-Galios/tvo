@@ -33,9 +33,9 @@ ALPHA=0.99
 for S in 5 10 50; do
     for K in 1 2 5 10; do
         # lower lr for reinforce for stability
-        # python run.py with loss=reinforce S=$S lr=0.00001 epochs=$EPOCHS --name cov_est_var -p -F ./runs
+        # python run.py with loss=reinforce S=$S lr=0.01 epochs=$EPOCHS --name cov_est_var -p -F ./runs
         # Set K = 1 for thermo to make equivalent to elbo
-        python run.py with loss=thermo_alpha S=$S K=1 alpha=$ALPHA epochs=$EPOCHS --name cov_est_var -p -F ./runs
+        python run.py with loss=thermo_alpha S=$S K=$K alpha=$ALPHA epochs=$EPOCHS --name cov_est_var -p -F ./runs
         # Run vae as is
         # python run.py with loss=vae S=$S epochs=$EPOCHS --name cov_est_var -p -F ./runs
     done;

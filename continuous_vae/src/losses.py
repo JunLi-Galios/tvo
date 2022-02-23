@@ -502,9 +502,14 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
     heated_log_L = alpha * heated_log_pi + (1 - alpha) * heated_log_p - heated_log_q.detach()
     heated_log_R = alpha * heated_log_pi + (1 - alpha) * heated_log_q - heated_log_q.detach()
 
-    
+    # log of L and R, where L and R are in eq(24) in the paper
     thermo_log_L = torch.logsumexp(torch.log(multiplier+1e-20) + torch.logsumexp(heated_log_L, dim=1),dim=1)
     thermo_log_R = torch.logsumexp(torch.log(multiplier+1e-20) + torch.logsumexp(heated_log_R, dim=1),dim=1)
+    
+    # the followings are computation process
+    # final loss is log(L - R)
+    # then its gradient is (log(L - R))' = (L' - R')/(L - R)
+    # a.k.a the loss can be represented as (exp(log_L) - exp(log_R))/(L-R).detach()
     
     thermo_log_L_detach = thermo_log_L.detach()
     
@@ -513,6 +518,7 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
 #     diff3 = thermo_log_R1 - thermo_log_R2
 #     diff4 = thermo_log_R2 - thermo_log_R2
     
+    # diffL and diffR are to simplify the compuational process
     diffL = thermo_log_L - thermo_log_L_detach
     diffR = thermo_log_R - thermo_log_L_detach
     
@@ -525,8 +531,10 @@ def get_thermo_alpha_loss_from_log_weight_log_p_log_q(alpha, log_weight, log_p, 
 #     print('diff2', diff2.size(), diff2.min(), diff2.max())
 #     print('diff3', diff3.size(), diff3.min(), diff3.max())
 #     print('diff4', diff4.size(), diff4.min(), diff4.max())
+
     
-    denominator = torch.exp(diffL) - torch.exp(diffR) + 1
+    
+    denominator = torch.exp(diffL) - torch.exp(diffR)
     denominator_detach = denominator.detach()
     
 #     print('denominator', denominator.size(), denominator.min(), denominator.max())

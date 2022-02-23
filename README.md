@@ -9,3 +9,8 @@ Code for [The Thermodynamic Variational Objective](https://arxiv.org/abs/1907.00
   booktitle = {Advances in Neural Information Processing Systems (To Appear)},
 }
 ```
+First download data
+```
+cd continuous_vae/data
+python download_MNIST.py
+```

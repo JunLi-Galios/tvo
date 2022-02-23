@@ -14,3 +14,9 @@ First download data
 cd continuous_vae/data
 python download_MNIST.py
 ```
+
+Then run code
+```
+cd ..
+bash make_data_for_paper.sh
+```
